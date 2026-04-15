@@ -1,323 +1,291 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import {
-  Box,
-  Card,
-  Button,
-  Typography,
-  Container,
+  Alert,
   AppBar,
-  Toolbar,
-  IconButton,
-  TextField,
-  InputAdornment,
+  Box,
+  Button,
+  Card,
+  Chip,
+  Container,
   Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
   DialogActions,
+  DialogContent,
+  DialogTitle,
+  Grid,
+  IconButton,
+  Stack,
+  TextField,
+  Toolbar,
+  Typography,
 } from '@mui/material';
-import { ArrowLeft, Eye, EyeOff, Copy, Edit, Trash2, Save, X } from 'lucide-react';
+import { ArrowLeft, Copy, Eye, EyeOff, RefreshCw, Save, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Toaster } from 'sonner';
-
-interface VaultEntry {
-  id: string;
-  service: string;
-  username: string;
-  password: string;
-}
+import { useVault } from '../context/VaultContext';
+import { getDefaultPasswordOptions } from '../lib/password-tools';
 
 export default function EntryDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [entry, setEntry] = useState<VaultEntry | null>(null);
+  const { status, entries, updateEntry, deleteEntry, recordEntryAccess, createPassword } = useVault();
   const [showPassword, setShowPassword] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editedService, setEditedService] = useState('');
-  const [editedUsername, setEditedUsername] = useState('');
-  const [editedPassword, setEditedPassword] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmValue, setDeleteConfirmValue] = useState('');
+  const entry = useMemo(() => entries.find((item) => item.id === id) || null, [entries, id]);
+  const [formData, setFormData] = useState({
+    service: '',
+    username: '',
+    password: '',
+    url: '',
+    category: '',
+    tags: '',
+    notes: '',
+  });
 
   useEffect(() => {
-    const entries = JSON.parse(localStorage.getItem('vaultEntries') || '[]');
-    const found = entries.find((e: VaultEntry) => e.id === id);
-    if (found) {
-      setEntry(found);
-      setEditedService(found.service);
-      setEditedUsername(found.username);
-      setEditedPassword(found.password);
-    } else {
-      navigate('/dashboard');
+    if (status === 'locked' || status === 'new') {
+      navigate('/auth');
     }
-  }, [id, navigate]);
+  }, [navigate, status]);
 
-  const handleCopy = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success(`${label} copied to clipboard`);
-  };
-
-  const handleSave = () => {
-    if (!editedService || !editedPassword) {
-      toast.error('Service name and password are required');
-      return;
-    }
-
-    const entries = JSON.parse(localStorage.getItem('vaultEntries') || '[]');
-    const updatedEntries = entries.map((e: VaultEntry) =>
-      e.id === id
-        ? { ...e, service: editedService, username: editedUsername, password: editedPassword }
-        : e
-    );
-    localStorage.setItem('vaultEntries', JSON.stringify(updatedEntries));
-    setEntry({
-      id: id!,
-      service: editedService,
-      username: editedUsername,
-      password: editedPassword,
+  useEffect(() => {
+    if (!entry) return;
+    setFormData({
+      service: entry.service,
+      username: entry.username,
+      password: entry.password,
+      url: entry.url,
+      category: entry.category,
+      tags: entry.tags.join(', '),
+      notes: entry.notes,
     });
+  }, [entry]);
+
+  if (!entry) {
+    return null;
+  }
+
+  const handleSave = async () => {
+    await updateEntry(entry.id, {
+      service: formData.service,
+      username: formData.username,
+      password: formData.password,
+      url: formData.url,
+      category: formData.category,
+      tags: formData.tags.split(',').map((tag) => tag.trim()).filter(Boolean),
+      notes: formData.notes,
+    });
+    toast.success('Entrée mise à jour.');
     setIsEditing(false);
-    toast.success('Entry updated successfully');
   };
 
-  const handleDelete = () => {
-    const entries = JSON.parse(localStorage.getItem('vaultEntries') || '[]');
-    const updatedEntries = entries.filter((e: VaultEntry) => e.id !== id);
-    localStorage.setItem('vaultEntries', JSON.stringify(updatedEntries));
-    toast.success('Entry deleted successfully');
-    setTimeout(() => navigate('/dashboard'), 500);
+  const handleReveal = async () => {
+    setShowPassword((current) => !current);
+    await recordEntryAccess(entry.id, `Révélation manuelle du mot de passe pour ${entry.service}.`);
   };
-
-  if (!entry) return null;
 
   return (
-    <>
-      <Toaster position="top-center" richColors />
-      <Box sx={{ minHeight: '100vh', bgcolor: '#0a1929' }}>
-        <AppBar position="static" sx={{ bgcolor: '#132f4c', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
-          <Toolbar>
-            <IconButton edge="start" color="inherit" onClick={() => navigate('/dashboard')}>
-              <ArrowLeft size={24} />
-            </IconButton>
-            <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 600 }}>
-              Password Details
-            </Typography>
-            {!isEditing && (
-              <IconButton color="inherit" onClick={() => setIsEditing(true)}>
-                <Edit size={24} />
-              </IconButton>
-            )}
-          </Toolbar>
-        </AppBar>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#081421' }}>
+      <AppBar position="static" sx={{ bgcolor: '#0f2740' }}>
+        <Toolbar>
+          <IconButton edge="start" color="inherit" onClick={() => navigate('/dashboard')}>
+            <ArrowLeft size={22} />
+          </IconButton>
+          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700 }}>
+            {entry.service}
+          </Typography>
+          {!isEditing && (
+            <Button color="inherit" onClick={() => setIsEditing(true)}>
+              Modifier
+            </Button>
+          )}
+        </Toolbar>
+      </AppBar>
 
-        <Container maxWidth="sm" sx={{ py: 4 }}>
-          <Card sx={{ p: 4, bgcolor: '#132f4c' }}>
-            {!isEditing ? (
-              <>
-                <Typography variant="h4" gutterBottom sx={{ fontWeight: 600, mb: 4 }}>
-                  {entry.service}
-                </Typography>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Grid container spacing={3}>
+          <Grid size={{ xs: 12, md: 7 }}>
+            <Card sx={{ p: 4, bgcolor: '#0f2740', border: '1px solid rgba(255,255,255,0.06)' }}>
+              {!isEditing ? (
+                <Stack spacing={3}>
+                  <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                    <Chip label={entry.category} />
+                    <Chip color={entry.passwordScore >= 80 ? 'success' : entry.passwordScore >= 60 ? 'warning' : 'error'} label={`${entry.passwordScore}/100`} />
+                    <Chip label={`${entry.entropyBits} bits`} />
+                    {entry.tags.map((tag) => (
+                      <Chip key={tag} label={tag} variant="outlined" />
+                    ))}
+                  </Stack>
 
-                <Box sx={{ mb: 3 }}>
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Service Name
-                  </Typography>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      p: 2,
-                      bgcolor: '#0a1929',
-                      borderRadius: 2,
-                      mb: 3,
-                    }}
-                  >
-                    <Typography variant="h6">{entry.service}</Typography>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleCopy(entry.service, 'Service name')}
-                      sx={{ color: 'primary.main' }}
-                    >
-                      <Copy size={20} />
-                    </IconButton>
-                  </Box>
+                  <Grid container spacing={2}>
+                    {[
+                      ['Identifiant', entry.username || 'Non renseigné'],
+                      ['URL', entry.url || 'Non renseignée'],
+                      ['Créée le', new Date(entry.createdAt).toLocaleString()],
+                      ['Dernière modification', new Date(entry.updatedAt).toLocaleString()],
+                      ['Dernier accès', entry.lastAccessedAt ? new Date(entry.lastAccessedAt).toLocaleString() : 'Jamais'],
+                    ].map(([label, value]) => (
+                      <Grid key={label} size={{ xs: 12, sm: 6 }}>
+                        <Typography color="text.secondary" variant="body2">
+                          {label}
+                        </Typography>
+                        <Typography>{value}</Typography>
+                      </Grid>
+                    ))}
+                  </Grid>
 
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Username
-                  </Typography>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      p: 2,
-                      bgcolor: '#0a1929',
-                      borderRadius: 2,
-                      mb: 3,
-                    }}
-                  >
-                    <Typography>{entry.username}</Typography>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleCopy(entry.username, 'Username')}
-                      sx={{ color: 'primary.main' }}
-                    >
-                      <Copy size={20} />
-                    </IconButton>
-                  </Box>
-
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    Password
-                  </Typography>
-                  <Box
-                    sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      p: 2,
-                      bgcolor: '#0a1929',
-                      borderRadius: 2,
-                      mb: 3,
-                    }}
-                  >
-                    <Typography sx={{ fontFamily: 'monospace', flex: 1 }}>
-                      {showPassword ? entry.password : '••••••••••••'}
+                  <Box>
+                    <Typography color="text.secondary" variant="body2" sx={{ mb: 1 }}>
+                      Mot de passe
                     </Typography>
-                    <Box>
-                      <IconButton
-                        size="small"
-                        onClick={() => setShowPassword(!showPassword)}
-                        sx={{ color: 'primary.main', mr: 1 }}
+                    <Stack direction="row" spacing={1.5} alignItems="center">
+                      <Box
+                        sx={{
+                          flex: 1,
+                          p: 2,
+                          borderRadius: 2,
+                          bgcolor: '#081421',
+                          fontFamily: 'monospace',
+                          wordBreak: 'break-all',
+                        }}
                       >
+                        {showPassword ? entry.password : '••••••••••••••••'}
+                      </Box>
+                      <IconButton color="primary" onClick={handleReveal}>
                         {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                       </IconButton>
                       <IconButton
-                        size="small"
-                        onClick={() => handleCopy(entry.password, 'Password')}
-                        sx={{ color: 'primary.main' }}
+                        color="primary"
+                        onClick={async () => {
+                          await navigator.clipboard.writeText(entry.password);
+                          await recordEntryAccess(entry.id, `Copie du mot de passe pour ${entry.service}.`);
+                          toast.success('Mot de passe copié.');
+                        }}
                       >
                         <Copy size={20} />
                       </IconButton>
-                    </Box>
+                    </Stack>
                   </Box>
-                </Box>
 
-                <Button
-                  fullWidth
-                  variant="outlined"
-                  color="error"
-                  startIcon={<Trash2 size={20} />}
-                  onClick={() => setDeleteDialogOpen(true)}
-                  sx={{ py: 1.5, fontWeight: 600, textTransform: 'none' }}
-                >
-                  Delete Entry
-                </Button>
-              </>
-            ) : (
-              <>
-                <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-                  Edit Entry
-                </Typography>
+                  {entry.domainWarnings.length > 0 && (
+                    <Alert severity="warning">{entry.domainWarnings.join(' ')}</Alert>
+                  )}
+                  {entry.passwordWarnings.length > 0 && (
+                    <Alert severity="warning">{entry.passwordWarnings.join(' ')}</Alert>
+                  )}
+                  {entry.notes && <Alert severity="info">{entry.notes}</Alert>}
 
-                <TextField
-                  fullWidth
-                  label="Service Name"
-                  value={editedService}
-                  onChange={(e) => setEditedService(e.target.value)}
-                  sx={{ mb: 2 }}
-                />
-
-                <TextField
-                  fullWidth
-                  label="Username"
-                  value={editedUsername}
-                  onChange={(e) => setEditedUsername(e.target.value)}
-                  sx={{ mb: 2 }}
-                />
-
-                <TextField
-                  fullWidth
-                  label="Password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={editedPassword}
-                  onChange={(e) => setEditedPassword(e.target.value)}
-                  sx={{ mb: 3 }}
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
-                          {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    startIcon={<Save size={20} />}
-                    onClick={handleSave}
-                    sx={{
-                      py: 1.5,
-                      fontWeight: 600,
-                      textTransform: 'none',
-                      bgcolor: 'success.main',
-                      '&:hover': { bgcolor: 'success.dark' },
-                    }}
-                  >
-                    Save Changes
-                  </Button>
                   <Button
                     fullWidth
                     variant="outlined"
-                    startIcon={<X size={20} />}
-                    onClick={() => {
-                      setIsEditing(false);
-                      setEditedService(entry.service);
-                      setEditedUsername(entry.username);
-                      setEditedPassword(entry.password);
-                    }}
-                    sx={{ py: 1.5, fontWeight: 600, textTransform: 'none' }}
+                    color="error"
+                    startIcon={<Trash2 size={18} />}
+                    onClick={() => setDeleteDialogOpen(true)}
                   >
-                    Cancel
+                    Supprimer définitivement
                   </Button>
-                </Box>
-              </>
-            )}
-          </Card>
-        </Container>
+                </Stack>
+              ) : (
+                <Stack spacing={2.5}>
+                  <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                    Modifier l’entrée
+                  </Typography>
+                  <TextField label="Service" value={formData.service} onChange={(event) => setFormData((current) => ({ ...current, service: event.target.value }))} />
+                  <TextField label="Identifiant" value={formData.username} onChange={(event) => setFormData((current) => ({ ...current, username: event.target.value }))} />
+                  <TextField label="URL" value={formData.url} onChange={(event) => setFormData((current) => ({ ...current, url: event.target.value }))} />
+                  <TextField label="Catégorie" value={formData.category} onChange={(event) => setFormData((current) => ({ ...current, category: event.target.value }))} />
+                  <TextField label="Tags" value={formData.tags} onChange={(event) => setFormData((current) => ({ ...current, tags: event.target.value }))} />
+                  <TextField
+                    label="Mot de passe"
+                    type={showPassword ? 'text' : 'password'}
+                    value={formData.password}
+                    onChange={(event) => setFormData((current) => ({ ...current, password: event.target.value }))}
+                  />
+                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      startIcon={<RefreshCw size={18} />}
+                      onClick={() =>
+                        setFormData((current) => ({
+                          ...current,
+                          password: createPassword(getDefaultPasswordOptions()),
+                        }))
+                      }
+                    >
+                      Rotation automatique
+                    </Button>
+                    <Button fullWidth variant="contained" startIcon={<Save size={18} />} onClick={handleSave}>
+                      Sauvegarder
+                    </Button>
+                  </Stack>
+                  <TextField
+                    label="Notes"
+                    multiline
+                    minRows={4}
+                    value={formData.notes}
+                    onChange={(event) => setFormData((current) => ({ ...current, notes: event.target.value }))}
+                  />
+                  <Button variant="text" onClick={() => setIsEditing(false)}>
+                    Annuler
+                  </Button>
+                </Stack>
+              )}
+            </Card>
+          </Grid>
 
-        <Dialog
-          open={deleteDialogOpen}
-          onClose={() => setDeleteDialogOpen(false)}
-          PaperProps={{
-            sx: { bgcolor: '#132f4c' },
-          }}
-        >
-          <DialogTitle>Delete Entry</DialogTitle>
-          <DialogContent>
-            <DialogContentText>
-              Are you sure you want to delete this password entry? This action cannot be undone.
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setDeleteDialogOpen(false)} sx={{ textTransform: 'none' }}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleDelete}
-              color="error"
-              variant="contained"
-              sx={{ textTransform: 'none' }}
-            >
-              Delete
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </Box>
-    </>
+          <Grid size={{ xs: 12, md: 5 }}>
+            <Card sx={{ p: 4, bgcolor: '#0f2740', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, mb: 2 }}>
+                Historique de l’entrée
+              </Typography>
+              <Stack spacing={1.5}>
+                {entry.history.map((item) => (
+                  <Box key={item.id} sx={{ p: 2, borderRadius: 2, bgcolor: '#081421' }}>
+                    <Typography sx={{ fontWeight: 600 }}>{item.action}</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {new Date(item.at).toLocaleString()}
+                    </Typography>
+                  </Box>
+                ))}
+              </Stack>
+            </Card>
+          </Grid>
+        </Grid>
+      </Container>
+
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Double confirmation requise</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <Typography>
+              Pour supprimer définitivement cette entrée, tape le nom du service: <strong>{entry.service}</strong>
+            </Typography>
+            <TextField
+              fullWidth
+              label="Confirmer la suppression"
+              value={deleteConfirmValue}
+              onChange={(event) => setDeleteConfirmValue(event.target.value)}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Annuler</Button>
+          <Button
+            color="error"
+            variant="contained"
+            disabled={deleteConfirmValue !== entry.service}
+            onClick={async () => {
+              await deleteEntry(entry.id);
+              toast.success('Entrée supprimée.');
+              navigate('/dashboard');
+            }}
+          >
+            Supprimer
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 }

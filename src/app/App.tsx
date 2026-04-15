@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router';
 import { AuthModal } from './components/AuthModal';
+import { useVault } from './context/VaultContext';
 
 const themes = {
   blue: '#0066CC',
@@ -15,10 +17,16 @@ const placeholderTexts = [
   'Posez une question à votre vault...',
 ];
 
-function App() {
+type AuthMode = 'login' | 'signup';
+
+export default function App() {
+  const navigate = useNavigate();
+  const { status, authRecord } = useVault();
   const [currentTheme, setCurrentTheme] = useState<keyof typeof themes>('blue');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<AuthMode>('signup');
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const featureChips = ['Génération', 'Gestion', 'Conversation'];
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -29,16 +37,28 @@ function App() {
 
   const accentColor = themes[currentTheme];
 
+  const openAuth = (mode: AuthMode) => {
+    if (status === 'unlocked') {
+      navigate('/dashboard');
+      return;
+    }
+
+    setAuthMode(authRecord ? 'login' : mode);
+    setIsAuthModalOpen(true);
+  };
+
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#0D0D0D', fontFamily: 'Inter, sans-serif' }}>
-      {/* Navbar */}
-      <nav className="px-6 py-5 flex items-center justify-between">
+    <div
+      className="h-[100dvh] overflow-hidden"
+      style={{ backgroundColor: '#0D0D0D', fontFamily: 'Inter, sans-serif' }}
+    >
+      <nav className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-3">
           <motion.div
             initial={{ rotate: 0 }}
             animate={{ rotate: 360 }}
             transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-            className="w-10 h-10 rounded-xl flex items-center justify-center"
+            className="flex h-10 w-10 items-center justify-center rounded-xl"
             style={{ backgroundColor: accentColor }}
           >
             <svg width="24" height="24" viewBox="0 0 48 48" fill="none">
@@ -62,13 +82,12 @@ function App() {
         </div>
 
         <div className="flex items-center gap-6">
-          {/* Theme Switcher */}
           <div className="flex items-center gap-2">
             {(Object.keys(themes) as Array<keyof typeof themes>).map((theme) => (
               <motion.button
                 key={theme}
                 onClick={() => setCurrentTheme(theme)}
-                className="w-6 h-6 rounded-full transition-all relative"
+                className="relative h-6 w-6 rounded-full transition-all"
                 style={{ backgroundColor: themes[theme] }}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
@@ -89,41 +108,29 @@ function App() {
           </div>
 
           <button
-            onClick={() => setIsAuthModalOpen(true)}
-            className="text-gray-300 hover:text-white transition-colors text-sm font-medium"
+            onClick={() => openAuth('login')}
+            className="text-sm font-medium text-gray-300 transition-colors hover:text-white"
           >
-            Se connecter
+            {status === 'unlocked' ? 'Ouvrir le coffre' : 'Se connecter'}
           </button>
           <motion.button
-            onClick={() => setIsAuthModalOpen(true)}
-            className="px-6 py-2.5 rounded-full text-white text-sm font-medium"
+            onClick={() => openAuth('signup')}
+            className="rounded-full px-6 py-2.5 text-sm font-medium text-white"
             style={{ backgroundColor: accentColor }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            Inscription gratuite
+            {status === 'unlocked' ? 'Accéder au dashboard' : 'Inscription gratuite'}
           </motion.button>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <div className="flex flex-col items-center justify-center px-6 pt-24 pb-32">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8"
-          style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)' }}
-        >
-          <span className="text-2xl">✨</span>
-          <span className="text-sm text-gray-300">Essai gratuit • Sécurité maximale</span>
-        </motion.div>
-
+      <div className="flex h-[calc(100dvh-72px)] flex-col items-center justify-center px-6 pb-8 pt-2">
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="text-6xl md:text-7xl font-bold text-center mb-6 leading-tight"
+          className="mb-4 text-center text-5xl font-bold leading-tight md:text-6xl"
         >
           <span className="text-white">MySafePass protège</span>
           <br />
@@ -134,9 +141,9 @@ function App() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="text-gray-400 text-lg md:text-xl text-center max-w-2xl mb-12"
+          className="mx-auto mb-8 max-w-2xl text-center text-base text-gray-400 md:text-lg"
         >
-          Générez, gérez et discutez avec votre coffre-fort intelligent. Sécurité AES-256 + IA.
+          Générez, gérez et discutez avec votre coffre-fort intelligent.
         </motion.p>
 
         <motion.div
@@ -147,7 +154,7 @@ function App() {
         >
           <div className="relative">
             <div
-              className="w-full px-6 py-5 rounded-2xl flex items-center gap-4 transition-all duration-300"
+              className="flex w-full items-center gap-4 rounded-2xl px-5 py-4 transition-all duration-300"
               style={{
                 backgroundColor: 'rgba(255, 255, 255, 0.05)',
                 border: '1px solid rgba(255, 255, 255, 0.1)',
@@ -160,15 +167,18 @@ function App() {
                 exit={{ opacity: 0 }}
                 type="text"
                 placeholder={placeholderTexts[placeholderIndex]}
-                className="flex-1 bg-transparent text-white text-lg placeholder-gray-500 focus:outline-none"
+                className="flex-1 bg-transparent text-base text-white placeholder-gray-500 focus:outline-none md:text-lg"
+                onFocus={() => openAuth(authRecord ? 'login' : 'signup')}
+                readOnly
               />
               <motion.button
-                className="w-12 h-12 rounded-xl flex items-center justify-center"
+                className="flex h-11 w-11 items-center justify-center rounded-xl"
                 style={{ backgroundColor: accentColor }}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => openAuth(authRecord ? 'login' : 'signup')}
               >
-                <ArrowRight className="w-5 h-5 text-white" />
+                <ArrowRight className="h-5 w-5 text-white" />
               </motion.button>
             </div>
           </div>
@@ -177,19 +187,15 @@ function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.7 }}
-            className="flex items-center justify-center gap-4 mt-6 flex-wrap"
+            className="mt-5 flex flex-wrap items-center justify-center gap-3"
           >
-            {[
-              { icon: '🔐', label: 'Génération' },
-              { icon: '🗂️', label: 'Gestion' },
-              { icon: '💬', label: 'Conversation' },
-            ].map((chip, index) => (
+            {featureChips.map((chip, index) => (
               <motion.div
-                key={chip.label}
+                key={chip}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.8 + index * 0.1 }}
-                className="px-5 py-2.5 rounded-full text-sm font-medium text-gray-300"
+                className="rounded-full px-4 py-2 text-sm font-medium text-gray-300"
                 style={{
                   backgroundColor: 'rgba(255, 255, 255, 0.05)',
                   border: '1px solid rgba(255, 255, 255, 0.1)',
@@ -199,8 +205,7 @@ function App() {
                   borderColor: accentColor,
                 }}
               >
-                <span className="mr-2">{chip.icon}</span>
-                {chip.label}
+                {chip}
               </motion.div>
             ))}
           </motion.div>
@@ -209,11 +214,10 @@ function App() {
 
       <AuthModal
         isOpen={isAuthModalOpen}
+        mode={authMode}
         onClose={() => setIsAuthModalOpen(false)}
         accentColor={accentColor}
       />
     </div>
   );
 }
-
-export default App;

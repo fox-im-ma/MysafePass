@@ -1,223 +1,243 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  Box,
-  Card,
-  Button,
-  Typography,
-  Container,
+  Alert,
   AppBar,
-  Toolbar,
+  Box,
+  Button,
+  Card,
+  Chip,
+  Container,
+  FormControlLabel,
+  Grid,
   IconButton,
   Slider,
-  FormControlLabel,
+  Stack,
   Switch,
   TextField,
-  Divider,
+  Toolbar,
+  Typography,
 } from '@mui/material';
-import { ArrowLeft, Copy, Save, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Copy, RefreshCw, Save, WandSparkles } from 'lucide-react';
 import { toast } from 'sonner';
-import { Toaster } from 'sonner';
+import { useVault } from '../context/VaultContext';
+import { analyzeServiceRisk } from '../lib/phishing';
+import { getDefaultPasswordOptions, type PasswordOptions } from '../lib/password-tools';
 
 export default function GeneratePassword() {
   const navigate = useNavigate();
-  const [length, setLength] = useState(16);
-  const [includeUppercase, setIncludeUppercase] = useState(true);
-  const [includeDigits, setIncludeDigits] = useState(true);
-  const [includeSymbols, setIncludeSymbols] = useState(true);
+  const { status, addEntry, analyzePassword, createPassword } = useVault();
+  const defaults = getDefaultPasswordOptions();
+  const [options, setOptions] = useState<PasswordOptions>(defaults);
   const [generatedPassword, setGeneratedPassword] = useState('');
   const [serviceName, setServiceName] = useState('');
   const [username, setUsername] = useState('');
+  const [url, setUrl] = useState('');
+  const [category, setCategory] = useState('Personnel');
+  const [tags, setTags] = useState('');
+  const [notes, setNotes] = useState('');
 
-  const generatePassword = () => {
-    let chars = 'abcdefghijklmnopqrstuvwxyz';
-    if (includeUppercase) chars += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    if (includeDigits) chars += '0123456789';
-    if (includeSymbols) chars += '!@#$%^&*()_+-=[]{}|;:,.<>?';
-
-    let password = '';
-    for (let i = 0; i < length; i++) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
+  useEffect(() => {
+    if (status === 'locked' || status === 'new') {
+      navigate('/auth');
     }
-    setGeneratedPassword(password);
+  }, [navigate, status]);
+
+  useEffect(() => {
+    setGeneratedPassword(createPassword(defaults));
+  }, [createPassword]);
+
+  const analysis = useMemo(() => analyzePassword(generatedPassword, options), [analyzePassword, generatedPassword, options]);
+  const risk = useMemo(() => analyzeServiceRisk(serviceName, url), [serviceName, url]);
+
+  const handleGenerate = () => {
+    setGeneratedPassword(createPassword(options));
   };
 
-  const handleCopy = () => {
-    if (generatedPassword) {
-      navigator.clipboard.writeText(generatedPassword);
-      toast.success('Password copied to clipboard');
-    }
-  };
-
-  const handleSave = () => {
-    if (!serviceName || !generatedPassword) {
-      toast.error('Please generate a password and enter a service name');
+  const handleSave = async () => {
+    if (!serviceName.trim() || !generatedPassword) {
+      toast.error('Service et mot de passe généré sont requis.');
       return;
     }
 
-    const entries = JSON.parse(localStorage.getItem('vaultEntries') || '[]');
-    const newEntry = {
-      id: Date.now().toString(),
+    await addEntry({
       service: serviceName,
-      username: username || 'Not specified',
+      username,
       password: generatedPassword,
-    };
-    entries.push(newEntry);
-    localStorage.setItem('vaultEntries', JSON.stringify(entries));
-    toast.success('Password saved successfully');
-    setTimeout(() => navigate('/dashboard'), 1000);
+      url,
+      category,
+      tags: tags.split(',').map((tag) => tag.trim()).filter(Boolean),
+      notes,
+    });
+
+    toast.success('Entrée ajoutée au coffre.');
+    navigate('/dashboard');
   };
 
   return (
-    <>
-      <Toaster position="top-center" richColors />
-      <Box sx={{ minHeight: '100vh', bgcolor: '#0a1929' }}>
-        <AppBar position="static" sx={{ bgcolor: '#132f4c', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>
-          <Toolbar>
-            <IconButton edge="start" color="inherit" onClick={() => navigate('/dashboard')}>
-              <ArrowLeft size={24} />
-            </IconButton>
-            <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 600 }}>
-              Generate Password
-            </Typography>
-          </Toolbar>
-        </AppBar>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#081421' }}>
+      <AppBar position="static" sx={{ bgcolor: '#0f2740' }}>
+        <Toolbar>
+          <IconButton edge="start" color="inherit" onClick={() => navigate('/dashboard')}>
+            <ArrowLeft size={22} />
+          </IconButton>
+          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 700 }}>
+            Générateur conforme au MVP
+          </Typography>
+        </Toolbar>
+      </AppBar>
 
-        <Container maxWidth="sm" sx={{ py: 4 }}>
-          <Card sx={{ p: 4, bgcolor: '#132f4c', mb: 3 }}>
-            <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-              Password Generator
-            </Typography>
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <Grid container spacing={3}>
+          <Grid size={{ xs: 12, md: 7 }}>
+            <Card sx={{ p: 4, bgcolor: '#0f2740', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <Stack spacing={3}>
+                <Box>
+                  <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+                    Paramètres de génération
+                  </Typography>
+                  <Typography color="text.secondary">
+                    Longueur 8-64, générée avec l’API Web Crypto et diversité imposée sur les types activés.
+                  </Typography>
+                </Box>
 
-            <Box sx={{ mb: 4 }}>
-              <Typography gutterBottom>Password Length: {length}</Typography>
-              <Slider
-                value={length}
-                onChange={(_, value) => setLength(value as number)}
-                min={8}
-                max={32}
-                step={1}
-                marks
-                sx={{ color: 'primary.main' }}
-              />
-            </Box>
-
-            <Box sx={{ mb: 3 }}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={includeUppercase}
-                    onChange={(e) => setIncludeUppercase(e.target.checked)}
-                    color="primary"
+                <Box>
+                  <Typography gutterBottom>Longueur: {options.length}</Typography>
+                  <Slider
+                    value={options.length}
+                    onChange={(_, value) => setOptions((current) => ({ ...current, length: value as number }))}
+                    min={8}
+                    max={64}
+                    step={1}
                   />
-                }
-                label="Include Uppercase (A-Z)"
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={includeDigits}
-                    onChange={(e) => setIncludeDigits(e.target.checked)}
-                    color="primary"
-                  />
-                }
-                label="Include Digits (0-9)"
-              />
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={includeSymbols}
-                    onChange={(e) => setIncludeSymbols(e.target.checked)}
-                    color="primary"
-                  />
-                }
-                label="Include Symbols (!@#$...)"
-              />
-            </Box>
+                </Box>
 
-            <Button
-              fullWidth
-              variant="contained"
-              startIcon={<RefreshCw size={20} />}
-              onClick={generatePassword}
-              sx={{ mb: 3, py: 1.5, fontWeight: 600, textTransform: 'none' }}
-            >
-              Generate Password
-            </Button>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={options.includeLowercase}
+                          onChange={(event) => setOptions((current) => ({ ...current, includeLowercase: event.target.checked }))}
+                        />
+                      }
+                      label="Minuscules"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={options.includeUppercase}
+                          onChange={(event) => setOptions((current) => ({ ...current, includeUppercase: event.target.checked }))}
+                        />
+                      }
+                      label="Majuscules"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={options.includeDigits}
+                          onChange={(event) => setOptions((current) => ({ ...current, includeDigits: event.target.checked }))}
+                        />
+                      }
+                      label="Chiffres"
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={options.includeSymbols}
+                          onChange={(event) => setOptions((current) => ({ ...current, includeSymbols: event.target.checked }))}
+                        />
+                      }
+                      label="Symboles"
+                    />
+                  </Grid>
+                </Grid>
 
-            {generatedPassword && (
-              <Box
-                sx={{
-                  p: 2,
-                  bgcolor: '#0a1929',
-                  borderRadius: 2,
-                  mb: 2,
-                  wordBreak: 'break-all',
-                  fontFamily: 'monospace',
-                  fontSize: '1.1rem',
-                  border: '2px solid #0066CC',
-                }}
-              >
-                {generatedPassword}
-              </Box>
-            )}
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  <Button fullWidth variant="contained" startIcon={<RefreshCw size={18} />} onClick={handleGenerate}>
+                    Générer
+                  </Button>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    startIcon={<Copy size={18} />}
+                    onClick={() => {
+                      navigator.clipboard.writeText(generatedPassword);
+                      toast.success('Mot de passe copié.');
+                    }}
+                  >
+                    Copier
+                  </Button>
+                </Stack>
 
-            {generatedPassword && (
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<Copy size={20} />}
-                onClick={handleCopy}
-                sx={{ mb: 3, py: 1.5, fontWeight: 600, textTransform: 'none' }}
-              >
-                Copy Password
-              </Button>
-            )}
-          </Card>
+                <Box
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 3,
+                    bgcolor: '#081421',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    fontFamily: 'monospace',
+                    fontSize: '1.15rem',
+                    wordBreak: 'break-all',
+                  }}
+                >
+                  {generatedPassword}
+                </Box>
 
-          {generatedPassword && (
-            <Card sx={{ p: 4, bgcolor: '#132f4c' }}>
-              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
-                Save to Vault
-              </Typography>
+                <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                  <Chip label={`Score ${analysis.score}/100`} color={analysis.score >= 80 ? 'success' : analysis.score >= 60 ? 'warning' : 'error'} />
+                  <Chip label={`${analysis.entropyBits} bits d’entropie`} />
+                  <Chip label={`Crack estimé: ${analysis.crackTimeLabel}`} />
+                </Stack>
 
-              <TextField
-                fullWidth
-                label="Service Name"
-                placeholder="e.g., Gmail, Facebook"
-                value={serviceName}
-                onChange={(e) => setServiceName(e.target.value)}
-                sx={{ mb: 2 }}
-              />
-
-              <TextField
-                fullWidth
-                label="Username (optional)"
-                placeholder="e.g., user@email.com"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                sx={{ mb: 3 }}
-              />
-
-              <Button
-                fullWidth
-                variant="contained"
-                startIcon={<Save size={20} />}
-                onClick={handleSave}
-                sx={{
-                  py: 1.5,
-                  fontWeight: 600,
-                  textTransform: 'none',
-                  bgcolor: 'success.main',
-                  '&:hover': { bgcolor: 'success.dark' },
-                }}
-              >
-                Save Password
-              </Button>
+                {analysis.warnings.length > 0 && (
+                  <Alert severity="warning">{analysis.warnings.join(' ')}</Alert>
+                )}
+                <Alert severity="info">{analysis.recommendations.join(' ')}</Alert>
+              </Stack>
             </Card>
-          )}
-        </Container>
-      </Box>
-    </>
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 5 }}>
+            <Card sx={{ p: 4, bgcolor: '#0f2740', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <Stack spacing={2.5}>
+                <Box>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                    Enregistrer dans le coffre
+                  </Typography>
+                  <Typography color="text.secondary">Ajout enrichi avec catégorie, tags, notes et contrôle de domaine.</Typography>
+                </Box>
+
+                <TextField fullWidth label="Service" value={serviceName} onChange={(event) => setServiceName(event.target.value)} />
+                <TextField fullWidth label="Identifiant / email" value={username} onChange={(event) => setUsername(event.target.value)} />
+                <TextField fullWidth label="URL du service" value={url} onChange={(event) => setUrl(event.target.value)} />
+                <TextField fullWidth label="Catégorie" value={category} onChange={(event) => setCategory(event.target.value)} />
+                <TextField fullWidth label="Tags (séparés par des virgules)" value={tags} onChange={(event) => setTags(event.target.value)} />
+                <TextField fullWidth multiline minRows={3} label="Notes" value={notes} onChange={(event) => setNotes(event.target.value)} />
+
+                {risk.warnings.length > 0 && (
+                  <Alert severity={risk.level === 'high' ? 'error' : 'warning'}>
+                    {risk.warnings.join(' ')}
+                  </Alert>
+                )}
+
+                <Button fullWidth variant="contained" color="success" startIcon={<Save size={18} />} onClick={handleSave}>
+                  Sauvegarder l’entrée
+                </Button>
+                <Button fullWidth variant="text" startIcon={<WandSparkles size={18} />} onClick={() => navigate('/assistant')}>
+                  Demander conseil à l’assistant
+                </Button>
+              </Stack>
+            </Card>
+          </Grid>
+        </Grid>
+      </Container>
+    </Box>
   );
 }
