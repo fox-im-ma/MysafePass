@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { useVault } from '../context/VaultContext';
 import { apiClient } from '../lib/api';
+import { PolicyModal } from './PolicyModal';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -38,6 +39,8 @@ export function AuthModal({ isOpen, mode, onClose, accentColor }: AuthModalProps
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -320,13 +323,21 @@ export function AuthModal({ isOpen, mode, onClose, accentColor }: AuthModalProps
                       />
                       <label htmlFor="terms" className="text-xs leading-relaxed text-gray-400">
                         J'accepte la{' '}
-                        <a href="#" className="underline transition-colors hover:text-white">
+                        <button
+                          type="button"
+                          onClick={() => setShowPrivacyModal(true)}
+                          className="underline transition-colors hover:text-white"
+                        >
                           politique de confidentialité
-                        </a>{' '}
+                        </button>{' '}
                         et les{' '}
-                        <a href="#" className="underline transition-colors hover:text-white">
+                        <button
+                          type="button"
+                          onClick={() => setShowTermsModal(true)}
+                          className="underline transition-colors hover:text-white"
+                        >
                           conditions d'utilisation
-                        </a>
+                        </button>
                       </label>
                     </div>
                   )}
@@ -376,6 +387,17 @@ export function AuthModal({ isOpen, mode, onClose, accentColor }: AuthModalProps
           </motion.div>
         </>
       )}
+
+      <PolicyModal
+        isOpen={showPrivacyModal}
+        onClose={() => setShowPrivacyModal(false)}
+        type="privacy"
+      />
+      <PolicyModal
+        isOpen={showTermsModal}
+        onClose={() => setShowTermsModal(false)}
+        type="terms"
+      />
     </AnimatePresence>
   );
 }

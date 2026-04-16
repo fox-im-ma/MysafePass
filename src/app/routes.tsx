@@ -5,6 +5,8 @@ import Dashboard from './pages/Dashboard';
 import GeneratePassword from './pages/GeneratePassword';
 import EntryDetail from './pages/EntryDetail';
 import Assistant from './pages/Assistant';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
 
 export const router = createBrowserRouter([
   {
@@ -30,5 +32,13 @@ export const router = createBrowserRouter([
   {
     path: '/entry/:id',
     Component: EntryDetail,
+  },
+  {
+    path: '/privacy-policy',
+    Component: PrivacyPolicy,
+  },
+  {
+    path: '/terms-of-service',
+    Component: TermsOfService,
   },
 ]);
