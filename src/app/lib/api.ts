@@ -7,13 +7,13 @@ const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000')
   .replace(/\/$/, '')
   .replace(/\/api$/, '');
 
-export interface RegisterRequest {
+export interface RegisterRequest extends Record<string, unknown> {
   username: string;
   email: string;
   password: string;
 }
 
-export interface LoginRequest {
+export interface LoginRequest extends Record<string, unknown> {
   username: string;
   password: string;
 }
@@ -44,7 +44,7 @@ export interface VaultEntry {
   domain_warnings: string[];
 }
 
-export interface VaultEntryRequest {
+export interface VaultEntryRequest extends Record<string, unknown> {
   service: string;
   username: string;
   password: string;

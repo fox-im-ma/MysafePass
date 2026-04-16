@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight } from 'lucide-react';
-import { useNavigate } from 'react-router';
 import { AuthModal } from './components/AuthModal';
 import { useVault } from './context/VaultContext';
 
@@ -20,7 +19,6 @@ const placeholderTexts = [
 type AuthMode = 'login' | 'signup';
 
 export default function App() {
-  const navigate = useNavigate();
   const { status, authRecord } = useVault();
   const [currentTheme, setCurrentTheme] = useState<keyof typeof themes>('blue');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -39,11 +37,10 @@ export default function App() {
 
   const openAuth = (mode: AuthMode) => {
     if (status === 'unlocked') {
-      navigate('/dashboard');
       return;
     }
 
-    setAuthMode(authRecord ? 'login' : mode);
+    setAuthMode(mode);
     setIsAuthModalOpen(true);
   };
 

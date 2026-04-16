@@ -39,7 +39,6 @@ import {
   type AuthRecord,
 } from '../lib/vault';
 import { PasswordAnalysis, PasswordOptions, analyzePasswordStrength, generateSecurePassword } from '../lib/password-tools';
-import { apiClient } from '../lib/api';
 
 type VaultStatus = 'loading' | 'new' | 'locked' | 'unlocked';
 
