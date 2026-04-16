@@ -242,7 +242,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
 
   const updateEntry = useCallback(async (id: string, updates: Partial<VaultEntry>, actionLabel = 'Entrée mise à jour') => {
     let updatedService = '';
-    const nextEntries = entries.map((entry) => {
+    const nextEntries = entries.map((entry: VaultEntry) => {
       if (entry.id !== id) return entry;
       updatedService = updates.service ?? entry.service;
       return updateEntryWithAnalysis(entry, updates, actionLabel);
@@ -255,8 +255,8 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   }, [appendAudit, entries]);
 
   const deleteEntry = useCallback(async (id: string) => {
-    const entry = entries.find((item) => item.id === id);
-    const nextEntries = entries.filter((item) => item.id !== id);
+    const entry = entries.find((item: VaultEntry) => item.id === id);
+    const nextEntries = entries.filter((item: VaultEntry) => item.id !== id);
     await appendAudit(
       createAuditEvent('entry.delete', `Entrée ${entry?.service || id} supprimée définitivement.`, 'critical'),
       nextEntries
@@ -264,7 +264,7 @@ export function VaultProvider({ children }: { children: ReactNode }) {
   }, [appendAudit, entries]);
 
   const recordEntryAccess = useCallback(async (id: string, message: string) => {
-    const nextEntries = entries.map((entry) =>
+    const nextEntries = entries.map((entry: VaultEntry) =>
       entry.id === id
         ? {
             ...entry,
