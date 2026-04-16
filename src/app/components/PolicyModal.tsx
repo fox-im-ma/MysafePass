@@ -91,7 +91,7 @@ export function PolicyModal({ isOpen, onClose, type }: PolicyModalProps) {
             <Box
               className="relative w-full max-w-2xl max-h-[85vh] rounded-3xl border border-white/10 overflow-hidden flex flex-col"
               style={{ backgroundColor: 'rgba(26, 26, 26, 0.96)' }}
-              onClick={(event) => event.stopPropagation()}
+              onClick={(event: React.MouseEvent<HTMLDivElement>) => event.stopPropagation()}
             >
               {/* Header */}
               <Box

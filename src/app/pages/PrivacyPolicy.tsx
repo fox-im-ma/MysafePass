@@ -29,116 +29,110 @@ export default function PrivacyPolicy() {
 
         <Box
           sx={{
-            bgcolor: 'rgba(15, 39, 64, 0.5)',
-            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'rgba(26, 26, 26, 0.8)',
+            backdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255,255,255,0.1)',
             borderRadius: 3,
             p: 6,
-            backdropFilter: 'blur(18px)',
           }}
         >
-          <Typography
-            variant="h3"
+          <Box
             sx={{
-              fontWeight: 700,
-              mb: 4,
               background: 'linear-gradient(135deg, #0066CC 0%, #0052a3 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
+              borderRadius: 2,
+              p: 3,
+              mb: 4,
             }}
           >
-            Politique de Confidentialité
-          </Typography>
-
-          <Stack spacing={3}>
-            <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
-                1. Introduction
-              </Typography>
-              <Typography color="text.secondary">
-                MySafePass ("nous", "nos", "notre") s'engage à protéger votre vie privée. Cette Politique de Confidentialité explique comment nous collectons, utilisons, divulguons et sauvegardons vos informations.
-              </Typography>
-            </Box>
-
-            <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
-                2. Informations que nous collectons
-              </Typography>
-              <Typography color="text.secondary" component="div">
-                <ul>
-                  <li>Nom d'utilisateur et adresse email lors de l'inscription</li>
-                  <li>Données chiffrées de votre coffre-fort (stockées localement)</li>
-                  <li>Logs d'accès et d'audit (stockés localement)</li>
-                  <li>Informations techniques (navigateur, adresse IP pour les connexions)</li>
-                </ul>
-              </Typography>
-            </Box>
-
-            <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
-                3. Chiffrement et Sécurité
-              </Typography>
-              <Typography color="text.secondary">
-                Tous les mots de passe et données sensibles sont chiffrés avec AES-256-GCM. Votre mot de passe maître n'est jamais stocké - il ne peut pas être récupéré une fois perdu. Nous utilisons Argon2id pour le hachage sécurisé.
-              </Typography>
-            </Box>
-
-            <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
-                4. Utilisation des données
-              </Typography>
-              <Typography color="text.secondary" component="div">
-                Nous utilisons vos informations pour:
-                <ul>
-                  <li>Fournir et maintenir notre service</li>
-                  <li>Authentifier votre compte de manière sécurisée</li>
-                  <li>Améliorer notre sécurité et nos fonctionnalités</li>
-                  <li>Vous notifier des mises à jour de sécurité importantes</li>
-                </ul>
-              </Typography>
-            </Box>
-
-            <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
-                5. Partage des données
-              </Typography>
-              <Typography color="text.secondary">
-                Vos données ne sont jamais vendues, louées ou partagées avec des tiers. Nous ne partageons que les informations minimales nécessaires avec nos fournisseurs d'infrastructure de confiance.
-              </Typography>
-            </Box>
-
-            <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
-                6. Stockage local
-              </Typography>
-              <Typography color="text.secondary">
-                La majorité de vos données est stockée localement dans votre navigateur. Notre backend ne conserve que les données minimales nécessaires à l'authentification et la synchronisation.
-              </Typography>
-            </Box>
-
-            <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
-                7. Modification de cette politique
-              </Typography>
-              <Typography color="text.secondary">
-                Nous pouvons mettre à jour cette politique de temps en temps. Nous vous notifierons de tout changement par email ou via une notification sur le service.
-              </Typography>
-            </Box>
-
-            <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
-                8. Contact
-              </Typography>
-              <Typography color="text.secondary">
-                Pour toute question concernant cette politique, veuillez nous contacter à: legal@mysafepass.fr
-              </Typography>
-            </Box>
-
-            <Typography
-              variant="caption"
-              sx={{ color: 'text.secondary', pt: 4, borderTop: '1px solid rgba(255,255,255,0.1)' }}
-            >
-              Dernière mise à jour: 16 avril 2026
+            <Typography variant="h4" sx={{ color: 'white', fontWeight: 700 }}>
+              Politique de Confidentialité
             </Typography>
+          </Box>
+
+          <Stack spacing={4}>
+            <Box>
+              <Typography sx={{ fontWeight: 600, mb: 1, color: '#0066CC' }}>
+                Introduction
+              </Typography>
+              <Typography sx={{ color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
+                MySafePass s'engage à protéger votre vie privée. Cette Politique de
+                Confidentialité explique comment nous collectons, utilisons, divulguons et
+                sauvegardons vos informations.
+              </Typography>
+            </Box>
+
+            <Box>
+              <Typography sx={{ fontWeight: 600, mb: 1, color: '#0066CC' }}>
+                Informations que nous collectons
+              </Typography>
+              <ul style={{ color: 'rgba(255,255,255,0.7)' }}>
+                <li>Nom d'utilisateur et adresse email lors de l'inscription</li>
+                <li>Données chiffrées de votre coffre-fort (stockées localement)</li>
+                <li>Logs d'accès et d'audit (stockés localement)</li>
+                <li>Informations techniques (navigateur, adresse IP pour les connexions)</li>
+              </ul>
+            </Box>
+
+            <Box>
+              <Typography sx={{ fontWeight: 600, mb: 1, color: '#0066CC' }}>
+                Chiffrement et Sécurité
+              </Typography>
+              <Typography sx={{ color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
+                Tous les mots de passe et données sensibles sont chiffrés avec AES-256-GCM.
+                Votre mot de passe maître n'est jamais stocké.
+              </Typography>
+            </Box>
+
+            <Box>
+              <Typography sx={{ fontWeight: 600, mb: 1, color: '#0066CC' }}>
+                Utilisation des données
+              </Typography>
+              <ul style={{ color: 'rgba(255,255,255,0.7)' }}>
+                <li>Fournir et maintenir notre service</li>
+                <li>Authentifier votre compte de manière sécurisée</li>
+                <li>Améliorer notre sécurité et nos fonctionnalités</li>
+                <li>Vous notifier des mises à jour de sécurité importantes</li>
+              </ul>
+            </Box>
+
+            <Box>
+              <Typography sx={{ fontWeight: 600, mb: 1, color: '#0066CC' }}>
+                Partage des données
+              </Typography>
+              <Typography sx={{ color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
+                Vos données ne sont jamais vendues ou partagées avec des tiers.
+              </Typography>
+            </Box>
+
+            <Box>
+              <Typography sx={{ fontWeight: 600, mb: 1, color: '#0066CC' }}>
+                Stockage local
+              </Typography>
+              <Typography sx={{ color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
+                Vos données de coffre-fort sont stockées en local sur votre appareil. Vous
+                avez le contrôle complet de vos données.
+              </Typography>
+            </Box>
+
+            <Box>
+              <Typography sx={{ fontWeight: 600, mb: 1, color: '#0066CC' }}>
+                Modifications
+              </Typography>
+              <Typography sx={{ color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
+                Nous nous réservons le droit de modifier cette politique à tout moment. Les
+                modifications majeures seront notifiées.
+              </Typography>
+            </Box>
+
+            <Box>
+              <Typography sx={{ fontWeight: 600, mb: 1, color: '#0066CC' }}>
+                Contact
+              </Typography>
+              <Typography sx={{ color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
+                Pour toute question concernant cette politique, contactez-nous à :
+                privacy@mysafepass.com
+              </Typography>
+            </Box>
           </Stack>
         </Box>
       </Container>
