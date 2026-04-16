@@ -1,5 +1,6 @@
 import { VaultEntry, getSecuritySummary } from './vault';
 import { generateSecurePassword, getDefaultPasswordOptions } from './password-tools';
+import { LLMService, AIContext } from './llm-service';
 
 export interface AssistantReply {
   message: string;
@@ -11,10 +12,49 @@ function formatEntryList(entries: VaultEntry[]) {
   return entries.map((entry) => `• ${entry.service} (${entry.username || 'identifiant non renseigné'})`).join('\n');
 }
 
-export function buildAssistantReply(input: string, entries: VaultEntry[]): AssistantReply {
+async function buildLLMResponse(input: string, entries: VaultEntry[]): Promise<AssistantReply | null> {
+  try {
+    // Build context for LLM
+    const summary = getSecuritySummary(entries);
+    const context: AIContext = {
+      entries_count: entries.length,
+      weak_entries: summary.weakEntries,
+      reused_count: summary.reusedPasswords,
+      total_entries: summary.totalEntries,
+      suspicious_entries: summary.suspiciousEntries,
+      entries: entries.map(e => ({ 
+        service: e.service, 
+        username: e.username || 'unknown' 
+      }))
+    };
+
+    const response = await LLMService.chat(input, context, true);
+    
+    return {
+      message: response.message,
+      suggestions: response.suggestions
+    };
+  } catch (error) {
+    console.warn('LLM response generation failed, using fallback:', error);
+    return null;
+  }
+}
+
+export async function buildAssistantReply(input: string, entries: VaultEntry[]): Promise<AssistantReply> {
   const normalized = input.trim().toLowerCase();
   const summary = getSecuritySummary(entries);
 
+  // Try LLM-powered response first
+  const llmResponse = await buildLLMResponse(input, entries);
+  if (llmResponse) {
+    return llmResponse;
+  }
+
+  // Fallback to heuristic responses
+  return buildHeuristicReply(normalized, entries, summary);
+}
+
+function buildHeuristicReply(normalized: string, entries: VaultEntry[], summary: any): AssistantReply {
   if (!normalized) {
     return {
       message: 'Je peux lister tes comptes, repérer les mots de passe faibles, détecter les doublons ou proposer un mot de passe fort.',

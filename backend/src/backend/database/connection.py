@@ -38,7 +38,7 @@ class DatabaseManager:
         """Initialize the SQLAlchemy engine with SQLCipher."""
         # SQLite URL with SQLCipher
         database_url = f"sqlite:///{self.database_path}"
-        
+
         # Create engine with SQLCipher
         self.engine = create_engine(
             database_url,
@@ -46,7 +46,7 @@ class DatabaseManager:
             poolclass=StaticPool,
             connect_args={
                 "check_same_thread": False,
-                "isolation_level": None,  # For autocommit mode
+                "timeout": 10,  # Wait up to 10 seconds for database lock
             }
         )
         
@@ -61,6 +61,10 @@ class DatabaseManager:
             cursor.execute("PRAGMA kdf_iter = 64000")
             cursor.execute("PRAGMA cipher_hmac_algorithm = HMAC_SHA256")
             cursor.execute("PRAGMA cipher_kdf_algorithm = PBKDF2_HMAC_SHA256")
+            # Enable WAL mode for better concurrency
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA synchronous=NORMAL")
+            cursor.execute("PRAGMA cache_size=-64000")
             cursor.close()
 
         # Create session factory

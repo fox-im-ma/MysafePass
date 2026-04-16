@@ -12,6 +12,9 @@ from dotenv import load_dotenv
 from ..database.connection import DatabaseManager
 from ..database.models import VaultEntry
 from ..auth.auth_service import AuthService
+from ..llm.llm_service import LLMService
+from ..llm.password_analyzer import PasswordAnalyzer
+from ..llm.ai_assistant import AIAssistant
 
 # Load environment variables
 load_dotenv()
@@ -46,6 +49,13 @@ def create_app():
     )
     
     auth_service = AuthService(db_manager)
+    
+    # Initialize LLM services
+    llm_model = os.getenv('LLM_MODEL', 'mistral')
+    ollama_url = os.getenv('OLLAMA_URL', 'http://localhost:11434')
+    llm_service = LLMService(ollama_url=ollama_url, model=llm_model)
+    password_analyzer = PasswordAnalyzer(llm_service=llm_service)
+    ai_assistant = AIAssistant(llm_service=llm_service)
     
     # Error handlers
     @app.errorhandler(429)
@@ -247,5 +257,96 @@ def create_app():
             "version": "1.0.0",
             "name": "MySafePass Backend"
         }), 200
+
+    # LLM and Security routes
+    @app.route('/api/security/check-password', methods=['POST'])
+    @limiter.limit(os.getenv('RATE_LIMIT_AUTH', '5 per minute'))
+    def check_password():
+        """Verify password robustness and check for sensitive data injection."""
+        try:
+            data = request.get_json()
+            
+            # Validate required fields
+            if 'password' not in data:
+                return jsonify({"success": False, "error": "Mot de passe requis"}), 400
+            
+            password = data['password']
+            username = data.get('username', None)
+            email = data.get('email', None)
+            
+            # Analyze password
+            analysis = password_analyzer.analyze_complete(
+                password=password,
+                username=username,
+                email=email
+            )
+            
+            return jsonify({
+                "success": True,
+                "analysis": {
+                    "overall_score": analysis['overall_score'],
+                    "recommendation": analysis['recommendation'],
+                    "approved": analysis['approved'],
+                    "basic_analysis": analysis['basic_analysis'],
+                    "sensitive_data_detected": analysis['sensitive_data_detected'],
+                    "password_length": analysis['password_length']
+                }
+            }), 200
+            
+        except Exception as e:
+            app.logger.error(f"Password check error: {str(e)}")
+            return jsonify({"success": False, "error": "Erreur lors de la vérification"}), 500
+
+    @app.route('/api/ai/llm-status', methods=['GET'])
+    def llm_status():
+        """Check if LLM is available."""
+        try:
+            available = llm_service.is_available()
+            models = llm_service.get_available_models() if available else []
+            
+            return jsonify({
+                "available": available,
+                "current_model": llm_service.model,
+                "available_models": models,
+                "url": ollama_url
+            }), 200
+            
+        except Exception as e:
+            app.logger.error(f"LLM status error: {str(e)}")
+            return jsonify({
+                "available": False,
+                "error": str(e)
+            }), 500
+
+    @app.route('/api/ai/chat', methods=['POST'])
+    @limiter.limit(os.getenv('RATE_LIMIT_AI', '20 per minute'))
+    def ai_chat():
+        """Process user query with AI assistant."""
+        try:
+            data = request.get_json()
+            
+            # Validate required fields
+            if 'query' not in data:
+                return jsonify({"success": False, "error": "Requête requise"}), 400
+            
+            query = data['query']
+            context = data.get('context', None)
+            use_llm = data.get('use_llm', True)
+            
+            # Process query
+            response = ai_assistant.process_query(
+                query=query,
+                context=context,
+                use_llm=use_llm
+            )
+            
+            return jsonify({
+                "success": True,
+                "response": response
+            }), 200
+            
+        except Exception as e:
+            app.logger.error(f"AI chat error: {str(e)}")
+            return jsonify({"success": False, "error": "Erreur lors du traitement de la requête"}), 500
 
     return app

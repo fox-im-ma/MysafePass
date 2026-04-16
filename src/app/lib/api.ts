@@ -68,7 +68,7 @@ class ApiClient {
     this.userId = null;
   }
 
-  private async request<T>(
+  public async request<T>(
     endpoint: string,
     method: string = 'GET',
     body?: Record<string, unknown>

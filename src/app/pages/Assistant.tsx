@@ -44,7 +44,7 @@ export default function Assistant() {
     }
   }, [navigate, status]);
 
-  const handleSend = (value = input) => {
+  const handleSend = async (value = input) => {
     const trimmed = value.trim();
     if (!trimmed) return;
 
@@ -53,15 +53,26 @@ export default function Assistant() {
       role: 'user',
       content: trimmed,
     };
-    const reply = buildAssistantReply(trimmed, entries);
-    const assistantMessage: Message = {
-      id: crypto.randomUUID(),
-      role: 'assistant',
-      content: reply.message,
-    };
+    
+    try {
+      const reply = await buildAssistantReply(trimmed, entries);
+      const assistantMessage: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: reply.message,
+      };
 
-    setMessages((current) => [...current, userMessage, assistantMessage]);
-    setInput('');
+      setMessages((current) => [...current, userMessage, assistantMessage]);
+      setInput('');
+    } catch (error) {
+      console.error('Error getting assistant reply:', error);
+      const errorMessage: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: 'Désolé, une erreur s\'est produite. Veuillez réessayer.',
+      };
+      setMessages((current) => [...current, userMessage, errorMessage]);
+    }
   };
 
   return (

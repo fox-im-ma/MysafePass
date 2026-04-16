@@ -57,9 +57,16 @@ export function AuthModal({ isOpen, mode, onClose, accentColor }: AuthModalProps
     setAgreedToTerms(false);
   }, [isOpen, mode]);
 
-  const passwordStrength = useMemo(() => getPasswordStrength(formData.password), [formData.password]);
-  const passwordsMatch = formData.password === formData.confirmPassword && formData.confirmPassword.length > 0;
-  const isMasterPasswordValid = formData.password.length >= 12;
+   const passwordStrength = useMemo(() => getPasswordStrength(formData.password), [formData.password]);
+   const passwordsMatch = formData.password === formData.confirmPassword && formData.confirmPassword.length > 0;
+   const isMasterPasswordValid = 
+     formData.password.length >= 12 &&
+     /[a-z]/.test(formData.password) &&
+     /[A-Z]/.test(formData.password) &&
+     /\d/.test(formData.password) &&
+     /[^A-Za-z0-9]/.test(formData.password)
+       ? true
+       : false;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
